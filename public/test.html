@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width" name="viewport">
+    <title>{{\App\Models\System::getSystem("system","name","")}}后台管理</title>
+    <link href="../model/layui/css/layui.css" rel="stylesheet">
+    <link href="../css/app.css" rel="stylesheet">
+    <style>
+        html {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .body-p {
+            width: 100%;
+            height: 100%;
+            background-color: #fefefe;
+            display: flex;
+            flex-wrap: nowrap;
+        }
+
+        p {
+            width: 100%;
+            color: #0095ef;
+            font-weight: bold;
+        }
+
+        .body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .table-header {
+            margin-left: 2px;
+            width: 100%;
+            height: 5%;
+            border: 0px;
+            background-color: #ffffff;
+            padding-left: 10px;
+            box-shadow: 1px 1px 3px 1px #cbcbcb;
+        }
+    </style>
+    <script src="../js/jquery.min.js"></script>
+</head>
+<body>
+
+<div class="body-p">
+    @include("components.menu",['request'=>$request,"user"=>$user,"web"=>$web])
+    <div class="body">
+        @include("components.header",['request'=>$request,"user"=>$user,"web"=>$web])
+        <iframe frameborder="0" id="body_url" src="?m=admin"
+                style="margin-left: 5px;margin-top: 5px;width: 100%;height: 93%;"></iframe>
+    </div>
+</div>
+
+<script src="../model/layer/layer.js"></script>
+<script>
+    //JS
+    @if
+    (isset($msg))
+    layer.msg('{{$msg}}');
+    @endif
+
+    $(".bh-memu-sw").on('click', function () {
+        $(".memu-title").toggle();
+        $(".web-title").toggle();
+    });
+
+</script>
+</body>
+</html>

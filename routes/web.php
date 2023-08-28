@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\api;
+use App\Http\Controllers\code;
+use App\Http\Controllers\Index;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get("/code", code::class);
+Route::any("/", Index::class);
+Route::get("/api", api::class);
+Route::any("/card", [code::class, "card"]);
