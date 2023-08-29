@@ -10,8 +10,6 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\View;
-
 class statistics extends Auths
 {
     protected $url = "statistics";
@@ -31,49 +29,7 @@ class statistics extends Auths
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
 
         //统计时间计算
-        $date = $this->extractDate(false, false);
-        #获取统计数据
-        $card = Card::user_chart($date);
-        $user = Card::user_chart($this->extractDate(true, false));
-        $data["Date"] = Card::getDate($card['data'], $user['data']);
-        $card_end = Card::user_chart($this->extractDate(false, true));
-        $user_end = Card::user_chart($this->extractDate(true, true));
-        $data["Date"] = array_values(array_unique(array_merge($data["Date"], Card::getDate($card_end['data'], $user_end['data']))));
-        $counts = [
-            ["name" => $card['name']]
-            , ["name" => $card_end['name']]
-            , ["name" => $user['name']]
-            , ["name" => $user_end['name']]];
-        foreach ($data["Date"] as $key => $value) {
-            $counts[0]["data"][$key] = 0;
-            $counts[1]["data"][$key] = 0;
-            $counts[2]["data"][$key] = 0;
-            $counts[3]["data"][$key] = 0;
-            foreach ($card['data'] as $values) {
-                if ($values->Date == $value) $counts[0]["data"][$key] = $values->Count;
-            }
-
-            foreach ($card_end['data'] as $values) {
-                if ($values->Date == $value) $counts[1]["data"][$key] = $values->Count;
-            }
-
-            foreach ($user['data'] as $values) {
-                if ($values->Date == $value) $counts[2]["data"][$key] = $values->Count;
-            }
-
-            foreach ($user_end['data'] as $values) {
-                if ($values->Date == $value) $counts[3]["data"][$key] = $values->Count;
-            }
-        }
-        $result = [
-            "code" => 200,
-            "title" => $this->getDay($date['today']) . "数据统计",
-            "subtitle" => "",
-            "xAxis" => $data["Date"],
-            "data" => $counts,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::chart($this, false, true);
     }
 
     /**
@@ -103,11 +59,7 @@ class statistics extends Auths
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
         //统计时间计算
         #获取统计数据
-        $date = $this->extractDate(true, false);
-        $card = Card::user_chart($date);
-        $date['end'] = true;
-        $card_end = Card::user_chart($date);
-        return $this->extracted($card_end, $card, $date['today']);
+        return \App\Libs\models\Statistics::chart($this, true);
     }
 
     /**
@@ -169,23 +121,7 @@ class statistics extends Auths
     {
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
         //统计时间计算
-        $date = $this->extractDate(false, false);
-        #获取统计数据
-        $data['card'] = Card::count($date);
-        $data['user'] = Card::count($this->extractDate(true, false));
-        $data['app'] = \App\Libs\models\App::count();
-        $data['activation'] = Card::user_count($date);
-        $data['expired'] = Card::user_count($this->extractDate(false, true));
-        $data['registrations'] = Card::user_count($this->extractDate(true, false));
-        $data['water'] = \App\Libs\models\Bill::bill_count($date);
-        $data['agent'] = \App\Libs\models\Agent::count();
-        $data['total'] = \App\Libs\models\Agent::totalBalance();
-        $result = [
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::home_total($this);
     }
 
     /**
@@ -198,10 +134,7 @@ class statistics extends Auths
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
         //统计时间计算
         #获取统计数据
-        $date = $this->extractDate(false, false);
-        $card = Card::user_chart($date);
-        $card_end = Card::user_chart($this->extractDate(false, true));
-        return $this->extracted($card_end, $card, $date['today']);
+        return \App\Libs\models\Statistics::chart($this, false);
     }
 
     /**
@@ -212,20 +145,7 @@ class statistics extends Auths
     public function card_total()
     {
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
-
-        //统计时间计算
-        $date = $this->extractDate(false, false);
-        #获取统计数据
-        $data['card'] = Card::count($date);
-        $data['activation'] = Card::user_count($date);
-        $data['expired'] = Card::user_count($this->extractDate(false, true));
-        $data['card_type'] = AuthController::isAdmin(AppModel) ? Kami::count() : count(json_decode(AuthController::user(AppModel)->app_list, true));
-        $result = [
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::total($this, false, false);
     }
 
     /**
@@ -246,25 +166,7 @@ class statistics extends Auths
     public function card_type()
     {
         //取卡类
-        if (AuthController::isAdmin(AppModel)) {
-            $Kami = Kami::where("Id", ">", 1);
-        } else {
-            $uid = [];
-            foreach (json_decode(AuthController::user(AppModel)->app_list, true) as $value) $uid[] = substr($value, 0, strpos($value, "|"));
-            $Kami = Kami::where("status", 1)->whereIn("app_uid", $uid);
-        }
-        $data = [];
-        foreach (($Kami->get()) as $value) {
-            $data[] = [$value->type, Card::count(["where" => [["type_uid", "=", $value->uid]]])];
-        }
-        #获取统计数据
-        $result = [
-            "title" => "卡类分类",
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::type($this, false, false);
     }
 
     /**
@@ -275,25 +177,7 @@ class statistics extends Auths
     public function card_app()
     {
         //取卡类
-        if (AuthController::isAdmin(AppModel)) {
-            $App = \App\Models\App::where("Id", ">", 1);
-        } else {
-            $uid = [];
-            foreach (json_decode(AuthController::user(AppModel)->app_list, true) as $value) $uid[] = substr($value, 0, strpos($value, "|"));
-            $App = \App\Models\App::where("app_status", 1)->whereIn("uid", $uid);
-        }
-        $data = [];
-        foreach (($App->get()) as $value) {
-            $data[] = [$value->type, Card::count(["where" => [["app_uid", "=", $value->uid]]])];
-        }
-        #获取统计数据
-        $result = [
-            "title" => "APP分类",
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::app($this, false, false);
     }
 
     /**
@@ -304,19 +188,7 @@ class statistics extends Auths
     public function card_status()
     {
         //取卡类
-        $data = [];
-        $data[] = ["已过期", Card::count(["where" => [["end_time", "<", time()], ["status", 0]]])];
-        $data[] = ["未激活", Card::count(["where" => [["status", 2]]])];
-        $data[] = ["冻结", Card::count(["where" => [["status", 1]]])];
-        $data[] = ["已激活", Card::count(["where" => [["status", 3], ["end_time", ">", time()]]])];
-        #获取统计数据
-        $result = [
-            "title" => "状态分类",
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::status($this, false, false);
     }
 
     /**
@@ -328,17 +200,7 @@ class statistics extends Auths
     {
         if (!$this->input("today", false)) return response()->json(["code" => "201", "msg" => "参数不对！"]);
         //统计时间计算
-        $date = $this->extractDate(true, false);
-        #获取统计数据
-        $data['user'] = Card::count($date);
-        $data['activation'] = Card::user_count($this->extractDate(true, true));
-        $data['app'] = AuthController::isAdmin(AppModel) ? \App\Models\App::count() : count(json_decode(AuthController::user(AppModel)->app_list, true));
-        $result = [
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::total($this, true, false);
     }
 
     /**
@@ -349,18 +211,7 @@ class statistics extends Auths
     public function user_status()
     {
         //取卡类
-        $data = [];
-        $data[] = ["已过期", Card::count(["user" => true, "where" => [["end_time", "<", time()]]])];
-        $data[] = ["未过期", Card::count(["user" => true, "where" => [["end_time", ">", time()]]])];
-        $data[] = ["冻结", Card::count(["user" => true, "where" => [["status", 1]]])];
-        #获取统计数据
-        $result = [
-            "title" => "状态分类",
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+        return \App\Libs\models\Statistics::status($this, true, false);
     }
 
     /**
@@ -371,25 +222,8 @@ class statistics extends Auths
     public function user_app()
     {
         //取卡类
-        if (AuthController::isAdmin(AppModel)) {
-            $App = \App\Models\App::where("Id", ">", 1);
-        } else {
-            $uid = [];
-            foreach (json_decode(AuthController::user(AppModel)->app_list, true) as $value) $uid[] = substr($value, 0, strpos($value, "|"));
-            $App = \App\Models\App::where("app_status", 1)->whereIn("uid", $uid);
-        }
-        $data = [];
-        foreach (($App->get()) as $value) {
-            $data[] = [$value->type, Card::count(["user" => true, "where" => [["app_uid", "=", $value->uid]]])];
-        }
-        #获取统计数据
-        $result = [
-            "title" => "APP分类",
-            "code" => 200,
-            "data" => $data,
-            "msg" => "",
-        ];
-        return response()->json($result);
+
+        return \App\Libs\models\Statistics::app($this, true, false);
     }
 
     /**

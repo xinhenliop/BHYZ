@@ -399,7 +399,7 @@ class Card
     public static function user_count(array $array): int
     {
         $labal = isset($array['end']) ? "end_time" : "activate_time";
-        $user = isset($array['user']) ? 1 : 0;
+        $user = isset($array['user']) && $array['user'] ? 1 : 0;
         $Users = AppUsers::where("type", $user);
         !AuthController::isAdmin(AppModel) && $Users = $Users->where("user_uid", AuthController::user(AppModel)->uid);
         return $Users->where($labal, "<", $array['date_date'])->where($labal, ">", $array['date_date'] - $array['today'])->count();
@@ -413,7 +413,7 @@ class Card
      */
     public static function count(array $array): int
     {
-        $user = isset($array['user']) ? 1 : 0;
+        $user = isset($array['user']) && $array['user'] ? 1 : 0;
         $Users = AppUsers::where("type", $user);
         isset($array['where']) && count($array['where']) > 0 && $Users = $Users->where($array['where']);
         !AuthController::isAdmin(AppModel) && $Users = $Users->where("user_uid", AuthController::user(AppModel)->uid);

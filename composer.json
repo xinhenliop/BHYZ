@@ -1,8 +1,11 @@
 {
-    "name": "laravel/laravel",
+    "name": "BH",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "",
+    "keywords": [
+        "BH",
+        "Author"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.1",

@@ -7,8 +7,16 @@ use Illuminate\Http\Request;
 use Psy\Util\Json;
 
 
+/**
+ *
+ */
 class HttpInput
 {
+    private string $AppModelsPath;
+    private string $name;
+    private string $med;
+    private array $req;
+
     public function __construct()
     {
         $this->name = 'App\\Http\\Controllers\\';
@@ -17,11 +25,20 @@ class HttpInput
         $this->req = [];
     }
 
+    /**
+     * @param $value
+     * @return bool
+     */
     public static function stringToBool($value)
     {
         return $value == "1";
     }
 
+    /**
+     * @param Request $request
+     * @param $T
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Foundation\Application|mixed|string
+     */
     public function call_(Request $request, $T)
     {
         $pa = '';
@@ -37,6 +54,10 @@ class HttpInput
         return $this->call_function($request);
     }
 
+    /**
+     * @param Request $request
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Foundation\Application|mixed|string
+     */
     function call_function(Request $request)
     {
         $php = $this->AppModelsPath;//app_path() .
@@ -69,6 +90,10 @@ class HttpInput
 
     }
 
+    /**
+     * @param $ar
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Foundation\Application|string
+     */
     public function ReturnHtml($ar)
     {
         $ar['context'] = $ar['context'] . ' | ' . $this->get_parms('m', "1") . '';
@@ -78,6 +103,11 @@ class HttpInput
         return $this->ReturnJson($ar);
     }
 
+    /**
+     * @param $key
+     * @param $def
+     * @return mixed
+     */
     function get_parms($key, $def)
     {
         if (isset($this->req[$key])) {
@@ -88,7 +118,11 @@ class HttpInput
 
     //不适用命名空间方法
 
-    function ReturnJson($json)
+    /**
+     * @param $json
+     * @return string
+     */
+    function ReturnJson($json): string
     {
         return Json::encode($json);
     }
